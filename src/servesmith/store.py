@@ -3,6 +3,7 @@
 import json
 import logging
 import sqlite3
+from threading import Lock
 
 from servesmith.models.experiment import Experiment, ExperimentRequest, ExperimentStatus
 
@@ -10,9 +11,14 @@ logger = logging.getLogger(__name__)
 
 
 class ExperimentStore:
-    """Persist experiments to SQLite."""
+    """Persist experiments to SQLite.
+
+    Uses a threading lock to prevent concurrent write corruption,
+    since FastAPI runs handlers in a threadpool.
+    """
 
     def __init__(self, db_path: str = "servesmith.db") -> None:
+        self._lock = Lock()
         self.db = sqlite3.connect(db_path, check_same_thread=False)
         self._create_tables()
 
@@ -28,17 +34,19 @@ class ExperimentStore:
         self.db.commit()
 
     def save(self, exp: Experiment) -> None:
-        self.db.execute(
-            "INSERT OR REPLACE INTO experiments (experiment_id, request_json, status, created_at) VALUES (?, ?, ?, ?)",
-            (exp.experiment_id, exp.request.model_dump_json(), exp.status.value, exp.created_at.isoformat()),
-        )
-        self.db.commit()
+        with self._lock:
+            self.db.execute(
+                "INSERT OR REPLACE INTO experiments (experiment_id, request_json, status, created_at) VALUES (?, ?, ?, ?)",
+                (exp.experiment_id, exp.request.model_dump_json(), exp.status.value, exp.created_at.isoformat()),
+            )
+            self.db.commit()
 
     def get(self, experiment_id: str) -> Experiment | None:
-        row = self.db.execute(
-            "SELECT experiment_id, request_json, status, created_at FROM experiments WHERE experiment_id = ?",
-            (experiment_id,),
-        ).fetchone()
+        with self._lock:
+            row = self.db.execute(
+                "SELECT experiment_id, request_json, status, created_at FROM experiments WHERE experiment_id = ?",
+                (experiment_id,),
+            ).fetchone()
         if not row:
             return None
         return Experiment(
@@ -48,8 +56,9 @@ class ExperimentStore:
         )
 
     def update_status(self, experiment_id: str, status: ExperimentStatus) -> None:
-        self.db.execute(
-            "UPDATE experiments SET status = ? WHERE experiment_id = ?",
-            (status.value, experiment_id),
-        )
-        self.db.commit()
+        with self._lock:
+            self.db.execute(
+                "UPDATE experiments SET status = ? WHERE experiment_id = ?",
+                (status.value, experiment_id),
+            )
+            self.db.commit()
