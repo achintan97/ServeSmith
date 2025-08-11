@@ -1,0 +1,36 @@
+---
+# Service account for ServeSmith jobs
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: servesmith-job-sa
+  namespace: default
+---
+# Permissions for job pods to manage workloads
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: servesmith-job-manager
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "configmaps", "persistentvolumeclaims"]
+    verbs: ["create", "get", "list", "watch", "delete", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: servesmith-job-manager-binding
+subjects:
+  - kind: ServiceAccount
+    name: servesmith-job-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: servesmith-job-manager
+  apiGroup: rbac.authorization.k8s.io
