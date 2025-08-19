@@ -16,9 +16,16 @@ def upload_directory_to_s3(local_dir: str, s3_path: str, region: str = "us-east-
     s3 = boto3.client("s3", region_name=region)
 
     # Parse s3://bucket/prefix
+    if not s3_path.startswith("s3://"):
+        raise ValueError(f"Expected S3 path (s3://...), got: {s3_path}")
+
     parts = s3_path.replace("s3://", "").split("/", 1)
     bucket = parts[0]
-    prefix = parts[1] if len(parts) > 1 else ""
+    prefix = parts[1].rstrip("/") if len(parts) > 1 else ""
+
+    if not os.path.isdir(local_dir):
+        logger.error(f"Local directory does not exist: {local_dir}")
+        return 0
 
     uploaded = 0
     for root, _, files in os.walk(local_dir):
