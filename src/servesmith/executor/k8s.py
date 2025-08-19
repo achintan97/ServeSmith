@@ -59,6 +59,11 @@ class K8sJobExecutor:
         node_selector = spec.node_selector
         if not node_selector and spec.resources.instance_type:
             node_selector = {"node.kubernetes.io/instance-type": spec.resources.instance_type}
+        elif not node_selector:
+            # No instance type specified — let K8s scheduler decide
+            # Do NOT fall back to karpenter labels or custom node pools
+            logger.warning(f"Job {spec.name} has no instance_type — scheduler will pick any available node")
+            node_selector = None
 
         job = V1Job(
             metadata=V1ObjectMeta(name=spec.name, namespace=spec.namespace),
