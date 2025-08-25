@@ -1,25 +1,67 @@
-# ServeSmith
+# ServeSmith ⚡
 
-Optimize LLM inference costs in one click.
+**Optimize LLM inference costs in one click.**
 
-Give ServeSmith your model and latency target. It tests hundreds of configurations across hardware, quantization, and parallelism — then tells you the cheapest way to serve it, with a deployable container.
+ServeSmith automatically benchmarks LLM serving configurations and recommends the cheapest setup meeting your latency SLAs.
+
+> 🚧 Early development — API is unstable.
+
+## Features
+
+- [x] FastAPI server with experiment submission
+- [x] Kubernetes job executor
+- [x] S3 integration for test data and results
+- [ ] vLLM benchmarker
+- [ ] Cost recommendations
+- [ ] Web dashboard
+
+## Prerequisites
+
+- Python 3.12+
+- Kubernetes cluster (EKS recommended)
+- AWS credentials with S3 and EKS access
+- `kubectl` configured for your cluster
 
 ## Quick Start
 
 ```bash
-make dev
-make run
-# API at http://localhost:8000/docs
+# Install
+pip install -e ".[dev]"
+
+# Run locally
+uvicorn servesmith.server:app --reload --port 8000
+
+# Health check
+curl http://localhost:8000/health
 ```
 
-## How It Works
+## Kubernetes Setup
 
-1. You submit a model + constraints (latency SLA, budget)
-2. ServeSmith generates experiment runs across configs
-3. Each run benchmarks on real hardware with your traffic
-4. Recommender ranks results by cost/token
-5. You get the cheapest config that meets your SLA
+ServeSmith runs benchmark jobs on your K8s cluster. You need:
 
-## Status
+1. **RBAC** — apply `k8s/rbac.yaml` for job creation permissions
+2. **Storage** — apply `k8s/storage.yaml` for EBS volumes (model weights)
+3. **GPU nodes** — at least one GPU node (g4dn.xlarge or larger)
 
-Early development. Currently supports vLLM on GPU instances.
+```bash
+kubectl apply -f k8s/rbac.yaml
+kubectl apply -f k8s/storage.yaml
+```
+
+See [docs/DEPLOYING.md](docs/DEPLOYING.md) for full EKS setup instructions.
+
+## API
+
+```bash
+# Submit an experiment
+curl -X POST http://localhost:8000/experiment \
+  -H "Content-Type: application/json" \
+  -d '{"source_model_name": "Qwen/Qwen2.5-0.5B-Instruct", ...}'
+
+# Check status
+curl http://localhost:8000/experiment/{id}
+```
+
+## License
+
+MIT
