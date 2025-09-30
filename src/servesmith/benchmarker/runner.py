@@ -33,8 +33,23 @@ class BenchmarkRunner:
         max_model_len: int = 2048,
         vllm_image: str | None = None,
         namespace: str = "default",
+        existing_endpoint: str | None = None,
     ) -> BenchmarkResult:
-        """Execute a full benchmark run."""
+        """Execute a full benchmark run.
+
+        If existing_endpoint is provided (e.g. "http://my-server:8000"),
+        skip pod creation and benchmark that endpoint directly.
+        """
+        if existing_endpoint:
+            logger.info(f"Benchmarking existing endpoint: {existing_endpoint}")
+            return run_benchmark(
+                base_url=existing_endpoint,
+                prompts=prompts,
+                concurrency=concurrency,
+                duration_sec=duration_sec,
+                warmup_sec=warmup_sec,
+            )
+
         pod_name = f"{experiment_id}-{run_id}-srv".lower().replace("_", "-")
 
         try:
@@ -93,3 +108,20 @@ def save_results_csv(results: list[BenchmarkResult], output_path: str) -> str:
 
     logger.info(f"Results saved to {output_path}")
     return output_path
+
+
+def upload_results_to_s3(local_path: str, s3_path: str, region: str = "us-east-1") -> None:
+    """Upload results to S3 with multipart for large files."""
+    import boto3
+    from boto3.s3.transfer import TransferConfig
+    if not s3_path.startswith("s3://"):
+        raise ValueError(f"Expected S3 path, got: {s3_path}")
+
+    parts = s3_path.replace("s3://", "").split("/", 1)
+    bucket = parts[0]
+    key = parts[1] if len(parts) > 1 else os.path.basename(local_path)
+
+    s3 = boto3.client("s3", region_name=region)
+    config = TransferConfig(multipart_threshold=8 * 1024 * 1024, max_concurrency=4)
+    s3.upload_file(local_path, bucket, key, Config=config)
+    logger.info(f"Uploaded {local_path} to s3://{bucket}/{key}")

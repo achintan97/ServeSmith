@@ -40,6 +40,9 @@ class VLLMServerManager:
         gpu_memory_utilization: float = 0.9,
         max_model_len: int = 2048,
         port: int = 8000,
+        kv_cache_dtype: str | None = None,
+        enable_prefix_caching: bool = False,
+        quantization: str | None = None,
     ) -> str:
         """Create a vLLM server pod and return its name."""
         args = [
@@ -50,6 +53,12 @@ class VLLMServerManager:
             "--dtype", "float16",
             "--port", str(port),
         ]
+        if kv_cache_dtype:
+            args.extend(["--kv-cache-dtype", kv_cache_dtype])
+        if enable_prefix_caching:
+            args.append("--enable-prefix-caching")
+        if quantization:
+            args.extend(["--quantization", quantization])
 
         container = V1Container(
             name=f"{name}-ctr",
@@ -102,7 +111,8 @@ class VLLMServerManager:
                     logger.info(f"vLLM server ready at {pod_ip}:{port}")
                     return pod_ip
                 except Exception:
-                    logger.debug(f"Server not ready yet, retrying...")
+                    elapsed = int(time.time() - start)
+                    logger.info(f"Model still loading... ({elapsed}s elapsed)")
 
             time.sleep(READINESS_POLL_INTERVAL)
 

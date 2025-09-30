@@ -44,7 +44,10 @@ def _send_chat_completion(base_url: str, prompt: dict, timeout: int = 300) -> tu
 
     body = json.loads(resp.read())
     usage = body.get("usage", {})
-    return latency, usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)
+    input_tokens = usage.get("prompt_tokens", 0)
+    output_tokens = usage.get("completion_tokens", 0)
+    # Don't use "total_tokens" — it includes both input and output
+    return latency, input_tokens, output_tokens
 
 
 def run_benchmark(
