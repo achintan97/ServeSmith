@@ -109,10 +109,22 @@ class VLLMServerManager:
         raise TimeoutError(f"vLLM server {name} not ready after {READINESS_TIMEOUT}s")
 
     def delete_server_pod(self, name: str, namespace: str = "default") -> None:
-        """Delete the vLLM server pod."""
+        """Delete the vLLM server pod and wait for it to be gone."""
         try:
             self.core_v1.delete_namespaced_pod(name=name, namespace=namespace)
             logger.info(f"Deleted vLLM server pod {name}")
+
+            # Wait for pod to actually terminate — otherwise GPU stays occupied
+            for _ in range(30):
+                try:
+                    self.core_v1.read_namespaced_pod(name=name, namespace=namespace)
+                    time.sleep(2)
+                except client.exceptions.ApiException as e:
+                    if e.status == 404:
+                        logger.info(f"Pod {name} fully terminated")
+                        return
+            logger.warning(f"Pod {name} still terminating after 60s")
+
         except client.exceptions.ApiException as e:
             if e.status != 404:
                 raise
