@@ -59,6 +59,10 @@ class Recommender:
                 logger.debug(f"Skipping run {run.run_id} — no completed requests")
                 continue
 
+            if result.tokens_per_sec == 0 and result.input_tokens_per_sec == 0:
+                logger.warning(f"Skipping run {run.run_id} — zero throughput (all requests may have failed)")
+                continue
+
             hourly_cost = get_hourly_cost(run.instance_type)
             gpu_count = 1  # TODO: derive from resource
 
