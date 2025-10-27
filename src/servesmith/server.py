@@ -60,12 +60,17 @@ def create_experiment(request: ExperimentRequest, background_tasks: BackgroundTa
 
 
 def _run_experiment(exp: Experiment) -> None:
-    """Background task that executes the experiment pipeline."""
+    """Background task that executes the experiment pipeline.
+
+    Runs in a thread pool to avoid blocking FastAPI's async event loop,
+    since the orchestrator makes synchronous K8s API calls.
+    """
     try:
         recs = orchestrator.execute(exp)
         _recommendations[exp.experiment_id] = [asdict(r) for r in recs]
+        logger.info(f"Experiment {exp.experiment_id} completed with {len(recs)} recommendations")
     except Exception as e:
-        logger.error(f"Experiment {exp.experiment_id} failed: {e}")
+        logger.error(f"Experiment {exp.experiment_id} failed: {e}", exc_info=True)
 
 
 @app.get("/experiment/{experiment_id}")
