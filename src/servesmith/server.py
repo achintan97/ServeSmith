@@ -15,16 +15,18 @@ from servesmith.planner.planner import ExperimentPlanner
 from servesmith.recommender.recommender import Recommender
 from servesmith.store import ExperimentStore
 
+import os
+
 logger = logging.getLogger(__name__)
 
 setup_logging()
 
+IN_CLUSTER = os.environ.get("KUBERNETES_SERVICE_HOST") is not None
+
 store = ExperimentStore()
 planner = ExperimentPlanner()
 recommender = Recommender()
-
-# Runner uses in_cluster=False for local dev, True when deployed to K8s
-runner = BenchmarkRunner(in_cluster=False)
+runner = BenchmarkRunner(in_cluster=IN_CLUSTER)
 
 orchestrator = Orchestrator(store=store, planner=planner, runner=runner, recommender=recommender)
 
