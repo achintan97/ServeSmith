@@ -5,7 +5,9 @@ import logging
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Depends
+
+from servesmith.auth import require_api_key
 
 from servesmith.benchmarker.runner import BenchmarkRunner
 from servesmith.logging_config import setup_logging
@@ -47,7 +49,11 @@ def health() -> dict[str, str]:
 
 
 @app.post("/experiment")
-def create_experiment(request: ExperimentRequest, background_tasks: BackgroundTasks) -> dict[str, str]:
+def create_experiment(
+    request: ExperimentRequest,
+    background_tasks: BackgroundTasks,
+    _: str = Depends(require_api_key),
+) -> dict[str, str]:
     """Submit a new optimization experiment.
 
     The experiment runs asynchronously in the background. Poll GET /experiment/{id} for status.
