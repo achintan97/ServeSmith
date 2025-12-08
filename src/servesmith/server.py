@@ -81,6 +81,21 @@ def _run_experiment(exp: Experiment) -> None:
         logger.error(f"Experiment {exp.experiment_id} failed: {e}", exc_info=True)
 
 
+@app.get("/experiments")
+def list_experiments() -> list[dict]:
+    """List all experiments with status."""
+    experiments = store.list_all()
+    return [
+        {
+            "experiment_id": exp.experiment_id,
+            "model": exp.request.source_model_name,
+            "status": exp.status.value,
+            "created_at": exp.created_at.isoformat(),
+        }
+        for exp in experiments
+    ]
+
+
 @app.get("/experiment/{experiment_id}")
 def get_experiment(experiment_id: str) -> dict:
     """Get experiment status and recommendations."""
