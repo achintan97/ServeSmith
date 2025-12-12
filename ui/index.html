@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ServeSmith — Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#09090b;--surface:#18181b;--surface2:#27272a;--border:#3f3f46;--text:#fafafa;--text2:#a1a1aa;--accent:#818cf8;--green:#22c55e;--red:#ef4444;--orange:#f59e0b}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+.container{max-width:1000px;margin:0 auto;padding:24px}
+nav{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:1.2rem;font-weight:800}.logo span{color:var(--accent)}
+h2{font-size:1.4rem;margin-bottom:16px;font-weight:700}
+.tabs{display:flex;gap:8px;margin-bottom:24px}
+.tab{padding:8px 16px;border-radius:6px;cursor:pointer;font-size:.85rem;background:var(--surface);border:1px solid var(--border);color:var(--text2)}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:var(--surface2);padding:10px 12px;text-align:left;font-weight:600;color:var(--text2);text-transform:uppercase;font-size:.75rem;letter-spacing:1px}
+td{padding:10px 12px;border-bottom:1px solid var(--border)}
+tr:hover td{background:rgba(129,140,248,.05)}
+.status{padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+.status.succeeded{background:rgba(34,197,94,.15);color:var(--green)}
+.status.active{background:rgba(245,158,11,.15);color:var(--orange)}
+.status.failed{background:rgba(239,68,68,.15);color:var(--red)}
+.status.pending{background:rgba(161,161,170,.15);color:var(--text2)}
+.btn{background:var(--accent);color:#fff;padding:8px 16px;border-radius:6px;font-weight:600;font-size:.85rem;border:none;cursor:pointer}
+.btn:hover{opacity:.9}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
+.metric{font-size:2rem;font-weight:800;color:var(--accent)}
+.metric-label{font-size:.8rem;color:var(--text2)}
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.85rem;color:var(--text2);margin-bottom:4px}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.85rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+#detail-panel{display:none}
+.highlight{color:var(--green);font-weight:700}
+.tag-best{background:rgba(34,197,94,.15);color:var(--green);padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">⚡ <span>ServeSmith</span></div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <span style="font-size:.8rem;color:var(--text2)" id="api-status">●  Connecting...</span>
+    <button class="btn" onclick="showTab('create')">+ New Experiment</button>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- Experiments List -->
+  <div id="tab-list">
+    <h2>Experiments</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Model</th><th>Status</th><th>Created</th><th></th></tr></thead>
+      <tbody id="exp-table"></tbody>
+    </table>
+    <p id="empty-msg" style="text-align:center;color:var(--text2);padding:32px;display:none">No experiments yet. Click "+ New Experiment" to start.</p>
+  </div>
+
+  <!-- Create Experiment -->
+  <div id="tab-create" style="display:none">
+    <h2>New Experiment</h2>
+    <div class="card">
+      <div class="form-group">
+        <label>Model Name (HuggingFace)</label>
+        <input id="f-model" value="Qwen/Qwen2.5-0.5B-Instruct" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Test Data (S3 path)</label>
+          <input id="f-data" value="s3://cortex-experiments-063337766236/test-data/prompts.json" />
+        </div>
+        <div class="form-group">
+          <label>Output (S3 path)</label>
+          <input id="f-output" value="s3://cortex-experiments-063337766236/servesmith-results/" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Instance Type</label>
+          <select id="f-instance">
+            <option value="g4dn.xlarge">g4dn.xlarge (T4, 16GB, $0.53/hr)</option>
+            <option value="g5.xlarge">g5.xlarge (A10G, 24GB, $1.01/hr)</option>
+            <option value="g5.2xlarge">g5.2xlarge (A10G, 24GB, $1.21/hr)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Concurrencies (comma-separated)</label>
+          <input id="f-conc" value="1,4,8" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Test Duration (seconds)</label>
+          <input id="f-duration" type="number" value="60" />
+        </div>
+        <div class="form-group">
+          <label>API Key</label>
+          <input id="f-apikey" value="dev123" />
+        </div>
+      </div>
+      <button class="btn" onclick="submitExperiment()">🚀 Run Experiment</button>
+      <button class="btn" style="background:var(--surface);border:1px solid var(--border);margin-left:8px" onclick="showTab('list')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Experiment Detail -->
+  <div id="tab-detail" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 id="detail-title">Experiment</h2>
+      <button class="btn" style="background:var(--surface);border:1px solid var(--border)" onclick="showTab('list')">← Back</button>
+    </div>
+    <div class="metrics-row" id="detail-metrics"></div>
+    <h2 style="font-size:1.1rem">Recommendations</h2>
+    <table>
+      <thead><tr><th>Rank</th><th>Instance</th><th>Concurrency</th><th>Tokens/sec</th><th>p99 Latency</th><th>Cost/M tokens</th><th></th></tr></thead>
+      <tbody id="rec-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+let currentTab = 'list';
+let pollInterval = null;
+
+function showTab(tab) {
+  document.getElementById('tab-list').style.display = tab === 'list' ? 'block' : 'none';
+  document.getElementById('tab-create').style.display = tab === 'create' ? 'block' : 'none';
+  document.getElementById('tab-detail').style.display = tab === 'detail' ? 'block' : 'none';
+  currentTab = tab;
+  if (tab === 'list') loadExperiments();
+}
+
+async function loadExperiments() {
+  try {
+    const resp = await fetch(`${API}/experiments`);
+    const data = await resp.json();
+    const tbody = document.getElementById('exp-table');
+    const empty = document.getElementById('empty-msg');
+
+    if (!data.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = data.map(e => `
+      <tr onclick="viewExperiment('${e.experiment_id}')" style="cursor:pointer">
+        <td><code>${e.experiment_id}</code></td>
+        <td>${e.model}</td>
+        <td><span class="status ${e.status}">${e.status}</span></td>
+        <td>${new Date(e.created_at).toLocaleString()}</td>
+        <td>→</td>
+      </tr>
+    `).join('');
+
+    document.getElementById('api-status').innerHTML = '● <span style="color:var(--green)">Connected</span>';
+  } catch(e) {
+    document.getElementById('api-status').innerHTML = '● <span style="color:var(--red)">Disconnected</span>';
+  }
+}
+
+async function viewExperiment(id) {
+  showTab('detail');
+  document.getElementById('detail-title').textContent = `Experiment ${id}`;
+
+  const poll = async () => {
+    const resp = await fetch(`${API}/experiment/${id}`);
+    const data = await resp.json();
+
+    const recs = data.recommendations || [];
+    const best = recs[0];
+
+    document.getElementById('detail-metrics').innerHTML = `
+      <div class="card"><div class="metric">${data.status}</div><div class="metric-label">Status</div></div>
+      <div class="card"><div class="metric">${best ? best.tokens_per_sec.toFixed(0) : '—'}</div><div class="metric-label">Best tokens/sec</div></div>
+      <div class="card"><div class="metric">${best ? (best.p99_latency_sec * 1000).toFixed(0) + 'ms' : '—'}</div><div class="metric-label">Best p99 latency</div></div>
+      <div class="card"><div class="metric">${best ? '$' + best.cost_per_million_tokens.toFixed(3) : '—'}</div><div class="metric-label">Best $/M tokens</div></div>
+    `;
+
+    document.getElementById('rec-table').innerHTML = recs.map((r, i) => `
+      <tr ${i === 0 ? 'style="background:rgba(34,197,94,.05)"' : ''}>
+        <td>#${r.rank}</td>
+        <td>${r.instance_type}</td>
+        <td>${r.concurrency}</td>
+        <td class="${i === 0 ? 'highlight' : ''}">${r.tokens_per_sec.toFixed(1)}</td>
+        <td>${(r.p99_latency_sec * 1000).toFixed(0)}ms</td>
+        <td class="${i === 0 ? 'highlight' : ''}">\$${r.cost_per_million_tokens.toFixed(3)}</td>
+        <td>${i === 0 ? '<span class="tag-best">Best</span>' : ''}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text2)">Running benchmarks...</td></tr>';
+
+    if (data.status === 'active' || data.status === 'pending') {
+      setTimeout(poll, 5000);
+    }
+  };
+  poll();
+}
+
+async function submitExperiment() {
+  const body = {
+    source_model_name: document.getElementById('f-model').value,
+    test_data_path: document.getElementById('f-data').value,
+    output_s3_path: document.getElementById('f-output').value,
+    resources: [{instance_type: document.getElementById('f-instance').value}],
+    concurrencies: document.getElementById('f-conc').value.split(',').map(Number),
+    test_duration: parseInt(document.getElementById('f-duration').value),
+    num_recommendations_to_return: 5,
+  };
+
+  const resp = await fetch(`${API}/experiment`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-API-Key': document.getElementById('f-apikey').value},
+    body: JSON.stringify(body),
+  });
+  const data = await resp.json();
+
+  if (data.experiment_id) {
+    viewExperiment(data.experiment_id);
+  } else {
+    alert('Error: ' + JSON.stringify(data));
+  }
+}
+
+// Initial load
+loadExperiments();
+</script>
+</body>
+</html>

@@ -2,10 +2,13 @@
 
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from dataclasses import asdict
+from pathlib import Path
 
 from fastapi import FastAPI, BackgroundTasks, Depends
+from fastapi.responses import FileResponse
 
 from servesmith.auth import require_api_key
 
@@ -113,3 +116,13 @@ def get_experiment(experiment_id: str) -> dict:
         response["recommendations"] = recs
 
     return response
+
+
+# Serve dashboard UI
+UI_DIR = Path(__file__).parent.parent.parent / "ui"
+
+
+@app.get("/")
+def dashboard() -> FileResponse:
+    """Serve the ServeSmith dashboard."""
+    return FileResponse(UI_DIR / "index.html", media_type="text/html")
