@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ServeSmith</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1b2d;--surface:#1a2332;--surface2:#232f3e;--surface3:#2a3a4e;--border:#354150;--text:#d5dbdb;--text2:#879596;--text-head:#fafafa;--accent:#0972d3;--accent-hover:#065299;--green:#037f0c;--green-bg:rgba(3,127,12,.1);--red:#d91515;--red-bg:rgba(217,21,21,.1);--orange:#b8860b;--orange-bg:rgba(184,134,11,.1);--blue-bg:rgba(9,114,211,.1);--radius:8px}
+body{font-family:-apple-system,'Amazon Ember',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6}
+
+/* Top nav */
+.topnav{background:var(--surface2);border-bottom:1px solid var(--border);padding:0 24px;height:48px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topnav-left{display:flex;align-items:center;gap:16px}
+.topnav .logo{font-size:16px;font-weight:700;color:var(--text-head)}
+.topnav .logo span{color:var(--accent)}
+.topnav-links{display:flex;gap:4px}
+.topnav-links a{color:var(--text2);padding:6px 12px;border-radius:4px;text-decoration:none;font-size:13px}
+.topnav-links a:hover,.topnav-links a.active{color:var(--text-head);background:var(--surface3)}
+.topnav-right{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text2)}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status-dot.ok{background:var(--green)}
+.status-dot.err{background:var(--red)}
+
+/* Breadcrumbs */
+.breadcrumbs{padding:12px 24px;font-size:13px;color:var(--text2);border-bottom:1px solid var(--border);background:var(--surface)}
+.breadcrumbs a{color:var(--accent);text-decoration:none}
+.breadcrumbs span{margin:0 6px}
+
+/* Layout */
+.page{padding:24px}
+.page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.page-header h1{font-size:24px;font-weight:700;color:var(--text-head)}
+.page-header p{font-size:13px;color:var(--text2);margin-top:4px}
+.page-actions{display:flex;gap:8px}
+
+/* Buttons */
+.btn{padding:6px 16px;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface3)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-sm{padding:4px 10px;font-size:12px}
+
+/* Cards / Containers */
+.container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px}
+.container-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.container-header h3{font-size:16px;font-weight:700;color:var(--text-head)}
+.container-header .subtitle{font-size:13px;color:var(--text2)}
+.container-body{padding:20px}
+
+/* Metrics row */
+.metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.metric-label{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.metric-value{font-size:28px;font-weight:800;line-height:1.2}
+.metric-value.green{color:var(--green)}
+.metric-value.blue{color:var(--accent)}
+.metric-value.orange{color:var(--orange)}
+.metric-sub{font-size:12px;color:var(--text2);margin-top:4px}
+
+/* Table */
+table{width:100%;border-collapse:collapse}
+th{background:var(--surface2);padding:10px 16px;text-align:left;font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+td{padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px}
+tr:hover td{background:rgba(9,114,211,.03)}
+tr.best td{background:var(--green-bg)}
+
+/* Badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-orange{background:var(--orange-bg);color:var(--orange)}
+.badge-blue{background:var(--blue-bg);color:var(--accent)}
+.badge-gray{background:rgba(135,149,150,.15);color:var(--text2)}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 20px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab.disabled{opacity:.4;cursor:not-allowed}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Forms */
+.form-section{margin-bottom:24px}
+.form-section h4{font-size:14px;font-weight:700;color:var(--text-head);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px}
+.form-group .hint{font-size:11px;color:var(--text2);margin-top:2px}
+input,select,textarea{width:100%;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(9,114,211,.2)}
+
+/* Alert */
+.alert{padding:12px 16px;border-radius:var(--radius);margin-bottom:16px;font-size:13px;border:1px solid}
+.alert-info{background:var(--blue-bg);border-color:rgba(9,114,211,.3);color:var(--accent)}
+.alert-success{background:var(--green-bg);border-color:rgba(3,127,12,.3);color:var(--green)}
+.alert-error{background:var(--red-bg);border-color:rgba(217,21,21,.3);color:var(--red)}
+
+/* Expandable */
+.expandable-header{cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text2)}
+.expandable-header:hover{color:var(--text)}
+.expandable-body{display:none;padding:0 16px 16px}
+.expandable-body.open{display:block}
+
+/* Rank badges */
+.rank{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-size:12px;font-weight:700}
+.rank-1{background:var(--green-bg);color:var(--green)}
+.rank-2{background:var(--blue-bg);color:var(--accent)}
+.rank-3{background:rgba(135,149,150,.15);color:var(--text2)}
+
+/* Wizard steps */
+.wizard-steps{display:flex;gap:0;margin-bottom:24px}
+.wizard-step{flex:1;padding:12px 16px;text-align:center;font-size:13px;font-weight:600;color:var(--text2);border-bottom:3px solid var(--border);cursor:pointer}
+.wizard-step.active{color:var(--accent);border-bottom-color:var(--accent)}
+.wizard-step.done{color:var(--green);border-bottom-color:var(--green)}
+
+/* Key-value pairs */
+.kv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.kv-item .kv-label{font-size:12px;color:var(--text2);margin-bottom:2px}
+.kv-item .kv-value{font-size:14px;color:var(--text-head);font-weight:600}
+
+/* Responsive */
+@media(max-width:768px){.metrics-row,.form-grid,.kv-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- Top Navigation -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="logo">⚡ <span>ServeSmith</span></div>
+    <div class="topnav-links">
+      <a href="#" class="active" onclick="navigate('dashboard')">Dashboard</a>
+      <a href="#" onclick="navigate('experiments')">Experiments</a>
+      <a href="#" onclick="navigate('create')">Create Experiment</a>
+    </div>
+  </div>
+  <div class="topnav-right">
+    <span class="status-dot ok" id="api-dot"></span>
+    <span id="api-label">Connected</span>
+  </div>
+</div>
+
+<!-- Pages -->
+
+<!-- Dashboard Page -->
+<div id="page-dashboard" class="page">
+  <div class="page-header">
+    <div><h1>Welcome to ServeSmith</h1><p>Model Optimization and Recommendation Service — Optimize your LLM inference with intelligent benchmarking.</p></div>
+  </div>
+
+  <div class="metrics-row" id="dash-metrics">
+    <div class="metric-card"><div class="metric-label">Total Experiments</div><div class="metric-value blue" id="dash-total">—</div></div>
+    <div class="metric-card"><div class="metric-label">Succeeded</div><div class="metric-value green" id="dash-succeeded">—</div></div>
+    <div class="metric-card"><div class="metric-label">Active</div><div class="metric-value orange" id="dash-active">—</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="container" style="cursor:pointer" onclick="navigate('experiments')">
+      <div class="container-body" style="text-align:center;padding:32px">
+        <div style="font-size:32px;margin-bottom:8px">📊</div>
+        <h3 style="color:var(--text-head);margin-bottom:4px">View Experiments</h3>
+        <p style="font-size:13px;color:var(--text2)">Browse and manage your optimization experiments, track progress, and analyze results.</p>
+      </div>
+    </div>
+    <div class="container" style="cursor:pointer" onclick="navigate('create')">
+      <div class="container-body" style="text-align:center;padding:32px">
+        <div style="font-size:32px;margin-bottom:8px">🚀</div>
+        <h3 style="color:var(--text-head);margin-bottom:4px">Create Experiment</h3>
+        <p style="font-size:13px;color:var(--text2)">Start a new optimization experiment with custom configurations and benchmarking parameters.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Experiments List Page -->
+<div id="page-experiments" class="page" style="display:none">
+  <div class="page-header">
+    <div><h1>Experiments</h1><p>All optimization experiments</p></div>
+    <div class="page-actions"><button class="btn-primary btn" onclick="navigate('create')">+ Create Experiment</button></div>
+  </div>
+  <div class="container">
+    <table>
+      <thead><tr><th>Experiment ID</th><th>Model</th><th>Status</th><th>Created</th><th></th></tr></thead>
+      <tbody id="exp-tbody"></tbody>
+    </table>
+    <div id="exp-empty" style="text-align:center;padding:40px;color:var(--text2);display:none">
+      No experiments yet. <a href="#" onclick="navigate('create')" style="color:var(--accent)">Create one →</a>
+    </div>
+  </div>
+</div>
+
+<!-- Create Experiment Page (Wizard) -->
+<div id="page-create" class="page" style="display:none">
+  <div class="breadcrumbs"><a href="#" onclick="navigate('experiments')">Experiments</a><span>›</span> Create Experiment</div>
+  <div style="padding:24px">
+    <div class="page-header"><div><h1>Create Experiment</h1><p>Configure and submit an LLM optimization experiment</p></div></div>
+
+    <div class="wizard-steps">
+      <div class="wizard-step active" id="ws-1" onclick="wizardStep(1)">1. Configuration</div>
+      <div class="wizard-step" id="ws-2" onclick="wizardStep(2)">2. Review & Submit</div>
+    </div>
+
+    <!-- Step 1 -->
+    <div id="wizard-1">
+      <div class="alert alert-info">
+        <strong>Create ServeSmith Experiment:</strong> Fill in the basic configuration below. Provide the model name, S3 paths for test data and output, and select your target hardware. Advanced settings are available in expandable sections.
+      </div>
+
+      <div class="form-section">
+        <h4>Basic Configuration</h4>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Model Name (HuggingFace)</label>
+            <input id="f-model" value="Qwen/Qwen2.5-0.5B-Instruct" />
+            <div class="hint">HuggingFace model ID or S3 path</div>
+          </div>
+          <div class="form-group">
+            <label>Test Data Path</label>
+            <input id="f-data" value="s3://cortex-experiments-063337766236/test-data/prompts.json" />
+            <div class="hint">S3 path to test prompts JSON</div>
+          </div>
+          <div class="form-group">
+            <label>Output S3 Path</label>
+            <input id="f-output" value="s3://cortex-experiments-063337766236/servesmith-results/" />
+            <div class="hint">S3 path for benchmark results</div>
+          </div>
+          <div class="form-group">
+            <label>API Key</label>
+            <input id="f-apikey" value="dev123" type="password" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>Optimization Configuration</h4>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Inference Engine</label>
+            <select id="f-engine">
+              <option value="vllm" selected>vLLM (Recommended)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Quantization</label>
+            <select id="f-quant">
+              <option value="">None (FP16)</option>
+              <option value="awq">AWQ</option>
+              <option value="gptq">GPTQ</option>
+              <option value="fp8">FP8</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>Performance Configuration</h4>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Concurrencies</label>
+            <input id="f-conc" value="1,4,8" />
+            <div class="hint">Comma-separated concurrency levels to test</div>
+          </div>
+          <div class="form-group">
+            <label>Test Duration (seconds)</label>
+            <input id="f-duration" type="number" value="60" />
+          </div>
+          <div class="form-group">
+            <label>Max Model Length</label>
+            <input id="f-maxlen" type="number" value="2048" />
+          </div>
+          <div class="form-group">
+            <label>Recommendations to Return</label>
+            <input id="f-numrec" type="number" value="5" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>Resource Configuration</h4>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Instance Type</label>
+            <select id="f-instance">
+              <option value="g4dn.xlarge">g4dn.xlarge — T4 16GB ($0.53/hr)</option>
+              <option value="g5.xlarge">g5.xlarge — A10G 24GB ($1.01/hr)</option>
+              <option value="g5.2xlarge">g5.2xlarge — A10G 24GB ($1.21/hr)</option>
+              <option value="p3.2xlarge">p3.2xlarge — V100 16GB ($3.06/hr)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tensor Parallel Size</label>
+            <select id="f-tp"><option value="1">1</option><option value="2">2</option><option value="4">4</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:24px">
+        <button class="btn" onclick="navigate('experiments')">Cancel</button>
+        <button class="btn-primary btn" onclick="wizardStep(2)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Review -->
+    <div id="wizard-2" style="display:none">
+      <div class="container">
+        <div class="container-header"><h3>Configuration Review</h3></div>
+        <div class="container-body">
+          <div class="kv-grid" id="review-grid"></div>
+        </div>
+      </div>
+      <div class="container">
+        <div class="container-header"><h3>Request Preview</h3></div>
+        <div class="container-body"><pre id="review-json" style="font-size:12px;overflow-x:auto;color:var(--text2)"></pre></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:24px">
+        <button class="btn" onclick="wizardStep(1)">← Previous</button>
+        <button class="btn-primary btn" id="submit-btn" onclick="submitExperiment()">🚀 Create Experiment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Experiment Detail Page -->
+<div id="page-detail" class="page" style="display:none">
+  <div class="breadcrumbs"><a href="#" onclick="navigate('experiments')">Experiments</a><span>›</span> <span id="detail-crumb">Experiment Details</span></div>
+  <div style="padding:24px">
+    <div class="page-header">
+      <div><h1 id="detail-title">Experiment Details</h1><p id="detail-subtitle"></p></div>
+      <div class="page-actions">
+        <button class="btn" onclick="refreshDetail()">↻ Refresh</button>
+        <button class="btn" id="export-btn" onclick="exportResults()" style="display:none">↓ Export Results</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="detailTab('overview')">Overview</div>
+      <div class="tab" id="tab-recs" onclick="detailTab('recs')">Recommendation Analysis</div>
+    </div>
+
+    <!-- Overview Tab -->
+    <div class="tab-content active" id="tc-overview">
+      <div id="detail-status-section"></div>
+      <div id="detail-executive"></div>
+      <div id="detail-config"></div>
+    </div>
+
+    <!-- Recommendations Tab -->
+    <div class="tab-content" id="tc-recs">
+      <div class="container" id="smart-prefs">
+        <div class="container-header">
+          <div><h3>Smart Recommendations</h3><div class="subtitle">Choose your optimization goal and set filters</div></div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="smart-toggle" checked onchange="rerankResults()"> Smart Ranking
+          </label>
+        </div>
+        <div class="container-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Optimize For</label>
+              <select id="f-optimize" onchange="rerankResults()">
+                <option value="cost">Cost per Million Tokens (lower is better)</option>
+                <option value="throughput">Throughput (higher is better)</option>
+                <option value="latency">P99 Latency (lower is better)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="container">
+        <div class="container-header"><h3>Recommended Configurations</h3><div class="subtitle" id="rec-counter"></div></div>
+        <div class="container-body" style="padding:0">
+          <table>
+            <thead><tr><th>Rank</th><th>Instance Configuration</th><th>Key Metrics</th><th>Optimization Metric</th><th></th></tr></thead>
+            <tbody id="rec-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+let currentPage = 'dashboard';
+let currentExpId = null;
+let currentExpData = null;
+
+// Navigation
+function navigate(page, expId) {
+  document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.topnav-links a').forEach(a => a.classList.remove('active'));
+
+  if (page === 'detail' && expId) {
+    currentExpId = expId;
+    document.getElementById('page-detail').style.display = 'block';
+    loadExperimentDetail(expId);
+  } else {
+    document.getElementById('page-' + page).style.display = 'block';
+    const links = document.querySelectorAll('.topnav-links a');
+    if (page === 'dashboard') links[0].classList.add('active');
+    if (page === 'experiments') { links[1].classList.add('active'); loadExperiments(); }
+    if (page === 'create') { links[2].classList.add('active'); wizardStep(1); }
+  }
+  currentPage = page;
+  window.scrollTo(0, 0);
+}
+
+// Health check
+async function checkHealth() {
+  try {
+    const r = await fetch(API + '/health');
+    const d = await r.json();
+    document.getElementById('api-dot').className = 'status-dot ok';
+    document.getElementById('api-label').textContent = 'Connected';
+  } catch(e) {
+    document.getElementById('api-dot').className = 'status-dot err';
+    document.getElementById('api-label').textContent = 'Disconnected';
+  }
+}
+
+// Dashboard
+async function loadDashboard() {
+  try {
+    const r = await fetch(API + '/experiments');
+    const data = await r.json();
+    document.getElementById('dash-total').textContent = data.length;
+    document.getElementById('dash-succeeded').textContent = data.filter(e => e.status === 'succeeded').length;
+    document.getElementById('dash-active').textContent = data.filter(e => e.status === 'active').length;
+  } catch(e) {}
+}
+
+// Experiments list
+async function loadExperiments() {
+  try {
+    const r = await fetch(API + '/experiments');
+    const data = await r.json();
+    const tbody = document.getElementById('exp-tbody');
+    const empty = document.getElementById('exp-empty');
+
+    if (!data.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = data.map(e => {
+      const badge = e.status === 'succeeded' ? 'badge-green' : e.status === 'active' ? 'badge-orange' : e.status === 'failed' ? 'badge-red' : 'badge-gray';
+      return `<tr style="cursor:pointer" onclick="navigate('detail','${e.experiment_id}')">
+        <td><code style="color:var(--accent)">${e.experiment_id}</code></td>
+        <td>${e.model}</td>
+        <td><span class="badge ${badge}">${e.status.toUpperCase()}</span></td>
+        <td>${new Date(e.created_at).toLocaleString()}</td>
+        <td style="color:var(--accent)">→</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// Wizard
+function wizardStep(step) {
+  document.getElementById('wizard-1').style.display = step === 1 ? 'block' : 'none';
+  document.getElementById('wizard-2').style.display = step === 2 ? 'block' : 'none';
+  document.getElementById('ws-1').className = 'wizard-step ' + (step >= 1 ? (step > 1 ? 'done' : 'active') : '');
+  document.getElementById('ws-2').className = 'wizard-step ' + (step === 2 ? 'active' : '');
+
+  if (step === 2) {
+    const req = buildRequest();
+    document.getElementById('review-grid').innerHTML = `
+      <div class="kv-item"><div class="kv-label">Model</div><div class="kv-value">${req.source_model_name}</div></div>
+      <div class="kv-item"><div class="kv-label">Instance</div><div class="kv-value">${req.resources[0].instance_type}</div></div>
+      <div class="kv-item"><div class="kv-label">Concurrencies</div><div class="kv-value">${req.concurrencies.join(', ')}</div></div>
+      <div class="kv-item"><div class="kv-label">Duration</div><div class="kv-value">${req.test_duration}s</div></div>
+      <div class="kv-item"><div class="kv-label">Engine</div><div class="kv-value">vLLM</div></div>
+      <div class="kv-item"><div class="kv-label">Quantization</div><div class="kv-value">${document.getElementById('f-quant').value || 'None (FP16)'}</div></div>
+    `;
+    document.getElementById('review-json').textContent = JSON.stringify(req, null, 2);
+  }
+}
+
+function buildRequest() {
+  const quant = document.getElementById('f-quant').value;
+  return {
+    source_model_name: document.getElementById('f-model').value,
+    test_data_path: document.getElementById('f-data').value,
+    output_s3_path: document.getElementById('f-output').value,
+    resources: [{ instance_type: document.getElementById('f-instance').value }],
+    concurrencies: document.getElementById('f-conc').value.split(',').map(Number),
+    test_duration: parseInt(document.getElementById('f-duration').value),
+    num_recommendations_to_return: parseInt(document.getElementById('f-numrec').value),
+    target_model_format_args: {
+      vllm_latest: {
+        quantization: quant ? [quant] : [null],
+        tensor_parallel_size: [parseInt(document.getElementById('f-tp').value)],
+        max_model_len: parseInt(document.getElementById('f-maxlen').value),
+      }
+    },
+  };
+}
+
+async function submitExperiment() {
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  try {
+    const r = await fetch(API + '/experiment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': document.getElementById('f-apikey').value },
+      body: JSON.stringify(buildRequest()),
+    });
+    const d = await r.json();
+    if (d.experiment_id) {
+      navigate('detail', d.experiment_id);
+    } else {
+      alert('Error: ' + JSON.stringify(d));
+    }
+  } catch(e) { alert('Error: ' + e.message); }
+  btn.disabled = false; btn.textContent = '🚀 Create Experiment';
+}
+
+// Experiment Detail
+async function loadExperimentDetail(id) {
+  document.getElementById('detail-title').textContent = 'Experiment Details';
+  document.getElementById('detail-subtitle').textContent = 'Loading ' + id + '...';
+  document.getElementById('detail-crumb').textContent = id;
+
+  try {
+    const r = await fetch(API + '/experiment/' + id);
+    currentExpData = await r.json();
+    renderDetail(currentExpData);
+
+    if (currentExpData.status === 'active' || currentExpData.status === 'pending') {
+      setTimeout(() => { if (currentPage === 'detail' && currentExpId === id) loadExperimentDetail(id); }, 5000);
+    }
+  } catch(e) {
+    document.getElementById('detail-subtitle').textContent = 'Error loading experiment';
+  }
+}
+
+function refreshDetail() { if (currentExpId) loadExperimentDetail(currentExpId); }
+
+function renderDetail(data) {
+  document.getElementById('detail-title').textContent = 'Experiment Details';
+  document.getElementById('detail-subtitle').textContent = 'Analysis and results for ' + data.experiment_id;
+
+  const recs = data.recommendations || [];
+  const best = recs[0];
+  const hasBest = !!best;
+
+  // Status section
+  const statusBadge = data.status === 'succeeded' ? 'badge-green' : data.status === 'active' ? 'badge-orange' : data.status === 'failed' ? 'badge-red' : 'badge-gray';
+  document.getElementById('detail-status-section').innerHTML = `
+    <div class="container">
+      <div class="container-header"><h3>Experiment Status</h3></div>
+      <div class="container-body">
+        <div class="kv-grid">
+          <div class="kv-item"><div class="kv-label">Experiment ID</div><div class="kv-value">${data.experiment_id}</div></div>
+          <div class="kv-item"><div class="kv-label">Status</div><div class="kv-value"><span class="badge ${statusBadge}">${data.status.toUpperCase()}</span></div></div>
+          <div class="kv-item"><div class="kv-label">Configurations Tested</div><div class="kv-value">${recs.length}</div></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Executive summary
+  if (hasBest) {
+    document.getElementById('detail-executive').innerHTML = `
+      <div class="container">
+        <div class="container-header"><h3>Executive Summary</h3></div>
+        <div class="container-body">
+          <div class="metrics-row">
+            <div class="metric-card">
+              <div class="metric-label">Most Cost Effective</div>
+              <div class="metric-value green">$${best.cost_per_million_tokens.toFixed(3)}</div>
+              <div class="metric-sub">per M tokens</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Highest Throughput</div>
+              <div class="metric-value blue">${best.tokens_per_sec.toFixed(1)}</div>
+              <div class="metric-sub">tokens/sec</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Lowest Latency</div>
+              <div class="metric-value orange">${(best.p99_latency_sec * 1000).toFixed(0)}ms</div>
+              <div class="metric-sub">p99 response time</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('export-btn').style.display = 'inline-flex';
+    document.getElementById('tab-recs').classList.remove('disabled');
+  } else {
+    document.getElementById('detail-executive').innerHTML = data.status === 'active'
+      ? '<div class="alert alert-info">⏳ Experiment is running. Results will appear here when benchmarks complete.</div>'
+      : '';
+    document.getElementById('export-btn').style.display = 'none';
+  }
+
+  // Render recs table
+  renderRecsTable(recs);
+}
+
+function renderRecsTable(recs) {
+  const optimize = document.getElementById('f-optimize').value;
+  const smart = document.getElementById('smart-toggle').checked;
+
+  let sorted = [...recs];
+  if (smart) {
+    sorted.sort((a, b) => {
+      if (optimize === 'cost') return a.cost_per_million_tokens - b.cost_per_million_tokens;
+      if (optimize === 'throughput') return b.tokens_per_sec - a.tokens_per_sec;
+      if (optimize === 'latency') return a.p99_latency_sec - b.p99_latency_sec;
+    });
+  }
+
+  document.getElementById('rec-counter').textContent = sorted.length + ' configurations' + (smart ? ' • Ranked by ' + document.getElementById('f-optimize').selectedOptions[0].text : '');
+
+  document.getElementById('rec-tbody').innerHTML = sorted.map((r, i) => {
+    const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+    const rowClass = i === 0 ? 'best' : '';
+    const label = i === 0 ? 'Best' : i === 1 ? '2nd' : i === 2 ? '3rd' : '';
+
+    let optMetric = '';
+    if (optimize === 'cost') optMetric = '$' + r.cost_per_million_tokens.toFixed(3) + '/M';
+    if (optimize === 'throughput') optMetric = r.tokens_per_sec.toFixed(1) + ' tok/s';
+    if (optimize === 'latency') optMetric = (r.p99_latency_sec * 1000).toFixed(0) + 'ms';
+
+    return `<tr class="${rowClass}">
+      <td><span class="rank ${rankClass}">#${i + 1}</span> ${label ? '<span class="badge badge-green" style="margin-left:4px">' + label + '</span>' : ''}</td>
+      <td><strong>${r.instance_type}</strong><br><span style="font-size:12px;color:var(--text2)">C${r.concurrency}</span></td>
+      <td><strong>${r.tokens_per_sec.toFixed(1)}</strong> tok/s<br><span style="font-size:12px;color:var(--text2)">${(r.p99_latency_sec * 1000).toFixed(0)}ms p99 • $${r.cost_per_million_tokens.toFixed(3)}/M</span></td>
+      <td style="font-weight:700;color:${i === 0 ? 'var(--green)' : 'inherit'}">${optMetric}</td>
+      <td><button class="btn btn-sm" onclick="alert(JSON.stringify(${JSON.stringify(r).replace(/"/g, '&quot;')}, null, 2))">Details</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text2)">No recommendations yet</td></tr>';
+}
+
+function rerankResults() {
+  if (currentExpData && currentExpData.recommendations) renderRecsTable(currentExpData.recommendations);
+}
+
+function detailTab(tab) {
+  document.querySelectorAll('#page-detail .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#page-detail .tab-content').forEach(t => t.classList.remove('active'));
+  if (tab === 'overview') {
+    document.querySelectorAll('#page-detail .tab')[0].classList.add('active');
+    document.getElementById('tc-overview').classList.add('active');
+  } else {
+    document.querySelectorAll('#page-detail .tab')[1].classList.add('active');
+    document.getElementById('tc-recs').classList.add('active');
+  }
+}
+
+function exportResults() {
+  if (!currentExpData) return;
+  const blob = new Blob([JSON.stringify(currentExpData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'servesmith-' + currentExpData.experiment_id + '.json';
+  a.click();
+}
+
+// Init
+checkHealth();
+loadDashboard();
+setInterval(() => { checkHealth(); if (currentPage === 'dashboard') loadDashboard(); if (currentPage === 'experiments') loadExperiments(); }, 10000);
+</script>
+</body>
+</html>
