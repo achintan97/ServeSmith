@@ -55,6 +55,20 @@ class ExperimentStore:
             status=ExperimentStatus(row[2]),
         )
 
+    def list_all(self) -> list[Experiment]:
+        with self._lock:
+            rows = self.db.execute(
+                "SELECT experiment_id, request_json, status, created_at FROM experiments ORDER BY created_at DESC"
+            ).fetchall()
+        return [
+            Experiment(
+                experiment_id=row[0],
+                request=ExperimentRequest.model_validate_json(row[1]),
+                status=ExperimentStatus(row[2]),
+            )
+            for row in rows
+        ]
+
     def update_status(self, experiment_id: str, status: ExperimentStatus) -> None:
         with self._lock:
             self.db.execute(
