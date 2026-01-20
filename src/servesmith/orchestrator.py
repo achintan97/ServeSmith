@@ -9,6 +9,7 @@ from pathlib import Path
 
 from servesmith.benchmarker.load_generator import BenchmarkResult
 from servesmith.benchmarker.runner import BenchmarkRunner, save_results_csv, upload_results_to_s3
+from servesmith.executor.gpu_scaler import ensure_gpu_node, scale_down_gpu
 from servesmith.models.experiment import Experiment, ExperimentStatus
 from servesmith.planner.planner import ExperimentPlanner, PlannedRun
 from servesmith.recommender.recommender import Recommendation, Recommender
@@ -54,7 +55,14 @@ class Orchestrator:
             # 3. Load test prompts
             prompts = self._load_prompts(request.test_data_path)
 
-            # 4. Execute each run sequentially
+            # 4. Ensure GPU node is available
+            logger.info(f"Experiment {exp_id}: ensuring GPU node is ready")
+            if not ensure_gpu_node():
+                logger.error(f"Experiment {exp_id}: GPU node failed to provision")
+                self.store.update_status(exp_id, ExperimentStatus.FAILED)
+                return []
+
+            # 5. Execute each run sequentially
             results: list[BenchmarkResult] = []
             successful_runs: list[PlannedRun] = []
 
@@ -112,6 +120,10 @@ class Orchestrator:
             logger.error(f"Experiment {exp_id} failed: {e}")
             self.store.update_status(exp_id, ExperimentStatus.FAILED)
             raise
+        finally:
+            # Scale down GPU to avoid idle costs
+            logger.info(f"Experiment {exp_id}: scaling down GPU node")
+            scale_down_gpu()
 
     def _load_prompts(self, test_data_path: str) -> list[dict]:
         """Load test prompts from local file or S3."""
