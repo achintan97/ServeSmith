@@ -103,9 +103,17 @@ class Orchestrator:
                 except Exception as e:
                     logger.error(f"Failed to upload results to S3: {e}")
 
-            # 6. Recommend
+            # 7. Recommend
+            constraints = None
+            if request.max_p99_latency_sec or request.min_tokens_per_sec or request.max_cost_per_million_tokens:
+                from servesmith.recommender.recommender import Constraints
+                constraints = Constraints(
+                    max_p99_latency_sec=request.max_p99_latency_sec,
+                    min_tokens_per_sec=request.min_tokens_per_sec,
+                    max_cost_per_million_tokens=request.max_cost_per_million_tokens,
+                )
             recommendations = self.recommender.recommend(
-                successful_runs, results, top_k=request.num_recommendations_to_return
+                successful_runs, results, constraints=constraints, top_k=request.num_recommendations_to_return
             )
 
             # 7. Done

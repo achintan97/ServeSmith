@@ -52,6 +52,11 @@ class ExperimentRequest(BaseModel):
     warmup_time: int = 10
     num_recommendations_to_return: int = 5
 
+    # SLA constraints — filter out configs that don't meet these
+    max_p99_latency_sec: float | None = None
+    min_tokens_per_sec: float | None = None
+    max_cost_per_million_tokens: float | None = None
+
 
 class ExperimentStatus(str, Enum):
     """Experiment lifecycle states."""
