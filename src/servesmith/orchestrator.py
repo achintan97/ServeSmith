@@ -32,6 +32,7 @@ class Orchestrator:
         self.planner = planner
         self.runner = runner
         self.recommender = recommender
+        self.last_run_details: list[dict] = []
 
     def execute(self, experiment: Experiment) -> list[Recommendation]:
         """Run the full pipeline: plan → benchmark → recommend."""
@@ -65,6 +66,7 @@ class Orchestrator:
             # 5. Execute each run sequentially
             results: list[BenchmarkResult] = []
             successful_runs: list[PlannedRun] = []
+            self.last_run_details = []
 
             for run in planned_runs:
                 logger.info(f"Experiment {exp_id}, run {run.run_id}: "
@@ -89,9 +91,18 @@ class Orchestrator:
                     successful_runs.append(run)
                     logger.info(f"Run {run.run_id}: {result.tokens_per_sec:.1f} tok/s, "
                                f"p99={result.p99_latency_sec*1000:.0f}ms")
+                    self.last_run_details.append({
+                        "run_id": run.run_id, "status": "SUCCEEDED",
+                        "instance_type": run.instance_type, "concurrency": run.concurrency,
+                        "tokens_per_sec": result.tokens_per_sec, "p99_latency_sec": result.p99_latency_sec,
+                    })
                 except Exception as e:
                     logger.error(f"Run {run.run_id} failed: {e}")
-                    # Continue with remaining runs — partial results are still useful
+                    self.last_run_details.append({
+                        "run_id": run.run_id, "status": "FAILED",
+                        "instance_type": run.instance_type, "concurrency": run.concurrency,
+                        "error": str(e),
+                    })
 
             # 5. Save results
             if results:
