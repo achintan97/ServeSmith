@@ -26,7 +26,8 @@ class Recommendation:
     p99_latency_sec: float
     cost_per_million_tokens: float
     hourly_cost: float
-    metrics: EnrichedMetrics
+    monthly_cost_at_1k_rpm: float | None = None
+    metrics: EnrichedMetrics = None
 
 
 @dataclass
@@ -82,7 +83,7 @@ class Recommender:
 
             recommendations.append(
                 Recommendation(
-                    rank=0,  # Set after sorting
+                    rank=0,
                     run_id=run.run_id,
                     instance_type=run.instance_type,
                     concurrency=run.concurrency,
@@ -93,6 +94,8 @@ class Recommender:
                     p99_latency_sec=enriched.p99_latency_sec,
                     cost_per_million_tokens=enriched.cost_per_million_tokens,
                     hourly_cost=hourly_cost,
+                    # 1K RPM × 50 avg tokens × 730 hours/month
+                    monthly_cost_at_1k_rpm=hourly_cost * 730 if hourly_cost else None,
                     metrics=enriched,
                 )
             )
