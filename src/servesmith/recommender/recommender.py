@@ -27,6 +27,7 @@ class Recommendation:
     cost_per_million_tokens: float
     hourly_cost: float
     monthly_cost_at_1k_rpm: float | None = None
+    docker_run_command: str | None = None
     metrics: EnrichedMetrics = None
 
 
@@ -37,6 +38,20 @@ class Constraints:
     max_p99_latency_sec: float | None = None
     min_tokens_per_sec: float | None = None
     max_cost_per_million_tokens: float | None = None
+
+
+def _build_docker_cmd(run: PlannedRun) -> str:
+    """Generate a docker run command to reproduce this config."""
+    args = [f"--model {run.model_name}"]
+    if run.tensor_parallel > 1:
+        args.append(f"--tensor-parallel-size {run.tensor_parallel}")
+    if run.quantization:
+        args.append(f"--quantization {run.quantization}")
+    if run.gpu_memory_utilization and run.gpu_memory_utilization != 0.9:
+        args.append(f"--gpu-memory-utilization {run.gpu_memory_utilization}")
+    if run.max_model_len:
+        args.append(f"--max-model-len {run.max_model_len}")
+    return f"docker run --gpus all -p 8000:8000 vllm/vllm-openai:latest {' '.join(args)}"
 
 
 class Recommender:
@@ -96,6 +111,7 @@ class Recommender:
                     hourly_cost=hourly_cost,
                     # 1K RPM × 50 avg tokens × 730 hours/month
                     monthly_cost_at_1k_rpm=hourly_cost * 730 if hourly_cost else None,
+                    docker_run_command=_build_docker_cmd(run),
                     metrics=enriched,
                 )
             )
