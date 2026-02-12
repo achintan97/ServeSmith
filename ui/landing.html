@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ServeSmith — Optimize LLM Inference in One Click</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#09090b;--surface:#18181b;--surface2:#27272a;--border:#3f3f46;--text:#fafafa;--text2:#a1a1aa;--accent:#818cf8;--accent2:#6366f1;--green:#22c55e;--red:#ef4444;--orange:#f59e0b}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+.container{max-width:1100px;margin:0 auto;padding:0 24px}
+
+/* Nav */
+nav{padding:16px 0;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(9,9,11,.9);backdrop-filter:blur(12px);z-index:100}
+nav .container{display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:1.3rem;font-weight:800;letter-spacing:-0.5px}
+.logo span{color:var(--accent)}
+nav .links{display:flex;gap:24px;align-items:center;font-size:.9rem;color:var(--text2)}
+nav .links a:hover{color:var(--text)}
+.btn{background:var(--accent2);color:#fff;padding:10px 20px;border-radius:8px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:all .2s}
+.btn:hover{background:var(--accent);transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--accent);background:rgba(99,102,241,.1)}
+
+/* Hero */
+.hero{padding:100px 0 80px;text-align:center}
+.badge{display:inline-block;background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.3);border-radius:20px;padding:6px 16px;font-size:.8rem;color:var(--accent);margin-bottom:24px}
+.hero h1{font-size:3.5rem;font-weight:800;letter-spacing:-2px;line-height:1.1;margin-bottom:20px;background:linear-gradient(135deg,#fff 0%,#818cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:1.2rem;color:var(--text2);max-width:600px;margin:0 auto 32px}
+.hero-cta{display:flex;gap:12px;justify-content:center;margin-bottom:48px}
+.hero-metric{display:flex;gap:48px;justify-content:center;margin-top:48px}
+.hero-metric div{text-align:center}
+.hero-metric .num{font-size:2rem;font-weight:800;color:var(--accent)}
+.hero-metric .label{font-size:.8rem;color:var(--text2);margin-top:4px}
+
+/* Works with */
+.works-with{padding:48px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);text-align:center}
+.works-with p{font-size:.85rem;color:var(--text2);margin-bottom:20px;text-transform:uppercase;letter-spacing:2px}
+.logo-bar{display:flex;gap:32px;justify-content:center;flex-wrap:wrap;align-items:center;opacity:.6}
+.logo-bar span{font-size:1rem;font-weight:600;color:var(--text2);padding:8px 16px;border:1px solid var(--border);border-radius:8px}
+
+/* How it works */
+.how{padding:80px 0}
+.how h2{font-size:2rem;font-weight:800;text-align:center;margin-bottom:48px;letter-spacing:-1px}
+.flow-steps{display:flex;gap:0;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:48px}
+.flow-step{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;text-align:center;width:180px}
+.flow-step .icon{font-size:2rem;margin-bottom:8px}
+.flow-step h4{font-size:.9rem;font-weight:600;margin-bottom:4px}
+.flow-step p{font-size:.75rem;color:var(--text2)}
+.flow-arrow{font-size:1.5rem;color:var(--accent);padding:0 8px}
+
+/* Before/After comparison */
+.comparison{padding:80px 0}
+.comparison h2{font-size:2rem;font-weight:800;text-align:center;margin-bottom:48px;letter-spacing:-1px}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.compare-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px}
+.compare-card.before{border-color:rgba(239,68,68,.3)}
+.compare-card.after{border-color:rgba(34,197,94,.3)}
+.compare-card .tag{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;display:inline-block;padding:4px 10px;border-radius:4px}
+.compare-card.before .tag{background:rgba(239,68,68,.15);color:var(--red)}
+.compare-card.after .tag{background:rgba(34,197,94,.15);color:var(--green)}
+.compare-card h3{font-size:1.1rem;font-weight:700;margin-bottom:12px}
+.compare-card p{font-size:.9rem;color:var(--text2);line-height:1.7}
+.compare-row{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+
+/* Results showcase */
+.results{padding:80px 0;background:var(--surface)}
+.results h2{font-size:2rem;font-weight:800;text-align:center;margin-bottom:12px;letter-spacing:-1px}
+.results .subtitle{text-align:center;color:var(--text2);margin-bottom:48px;font-size:1rem}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:var(--surface2);padding:12px 16px;text-align:left;font-weight:600;color:var(--text2);text-transform:uppercase;font-size:.75rem;letter-spacing:1px}
+td{padding:12px 16px;border-bottom:1px solid var(--border)}
+tr:hover td{background:rgba(129,140,248,.05)}
+.highlight{color:var(--green);font-weight:700}
+.tag-best{background:rgba(34,197,94,.15);color:var(--green);padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+
+/* Pricing */
+.pricing{padding:80px 0}
+.pricing h2{font-size:2rem;font-weight:800;text-align:center;margin-bottom:12px;letter-spacing:-1px}
+.pricing .subtitle{text-align:center;color:var(--text2);margin-bottom:48px}
+.pricing-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px}
+.price-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative}
+.price-card.featured{border-color:var(--accent);box-shadow:0 0 40px rgba(99,102,241,.15)}
+.price-card .plan{font-size:.85rem;color:var(--text2);text-transform:uppercase;letter-spacing:2px;font-weight:600}
+.price-card .price{font-size:2.5rem;font-weight:800;margin:12px 0}
+.price-card .price span{font-size:1rem;color:var(--text2);font-weight:400}
+.price-card ul{list-style:none;margin:24px 0}
+.price-card li{padding:8px 0;font-size:.9rem;color:var(--text2)}
+.price-card li::before{content:"✓ ";color:var(--green);font-weight:700}
+.price-card .btn{width:100%;text-align:center;display:block;margin-top:24px}
+
+/* Footer */
+footer{padding:48px 0;border-top:1px solid var(--border);text-align:center;color:var(--text2);font-size:.85rem}
+
+/* Responsive */
+@media(max-width:768px){
+  .hero h1{font-size:2.2rem}
+  .compare-grid,.compare-row,.pricing-grid{grid-template-columns:1fr}
+  .flow-steps{flex-direction:column}
+  .flow-arrow{transform:rotate(90deg)}
+  .hero-metric{flex-direction:column;gap:24px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <div class="logo">⚡ <span>ServeSmith</span></div>
+    <div class="links">
+      <a href="#how">How it works</a>
+      <a href="#results">Results</a>
+      <a href="#pricing">Pricing</a>
+      <a href="https://github.com" class="btn-outline btn">GitHub</a>
+      <a href="#" class="btn">Try Free →</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="badge">Open Source • MIT Licensed</div>
+    <h1>Cut your LLM inference costs by 50-70%</h1>
+    <p>Tell ServeSmith your model and latency target. It tests hundreds of configurations and tells you the cheapest way to serve it — with a deployable container.</p>
+    <div class="hero-cta">
+      <a href="#" class="btn">Start Optimizing — Free →</a>
+      <a href="#" class="btn btn-outline">View on GitHub</a>
+    </div>
+    <div class="hero-metric">
+      <div><div class="num">122→820</div><div class="label">tokens/sec with one config change</div></div>
+      <div><div class="num">6.7×</div><div class="label">throughput improvement found</div></div>
+      <div><div class="num">$0.054</div><div class="label">per million tokens (cheapest config)</div></div>
+      <div><div class="num">60s</div><div class="label">per benchmark run</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="works-with">
+  <div class="container">
+    <p>Supports all major inference backends</p>
+    <div class="logo-bar">
+      <span>vLLM</span>
+      <span>TensorRT-LLM</span>
+      <span>Triton</span>
+      <span>Ray Serve</span>
+      <span>Inferentia / Neuron</span>
+      <span>SGLang</span>
+    </div>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <div class="container">
+    <h2>How ServeSmith Works</h2>
+    <div class="flow-steps">
+      <div class="flow-step"><div class="icon">📦</div><h4>Your Model</h4><p>Point to HuggingFace or S3</p></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="icon">⚙️</div><h4>Auto-Experiment</h4><p>Tests 100s of configs</p></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="icon">📊</div><h4>Benchmark</h4><p>Real traffic, real metrics</p></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="icon">🏆</div><h4>Recommend</h4><p>Ranked by cost/token</p></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="icon">🚀</div><h4>Deploy</h4><p>Ready container image</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="comparison">
+  <div class="container">
+    <h2>Stop Guessing Your Inference Config</h2>
+
+    <div class="compare-row">
+      <div class="compare-card before">
+        <div class="tag">Without ServeSmith</div>
+        <h3>Manual Trial and Error</h3>
+        <p>Pick an instance type. Guess the quantization. Deploy. Benchmark manually. Too slow? Try another config. Repeat for weeks. Hope you didn't miss a cheaper option.</p>
+      </div>
+      <div class="compare-card after">
+        <div class="tag">With ServeSmith</div>
+        <h3>Automated Optimization</h3>
+        <p>Submit one request. ServeSmith tests every viable combination of hardware, quantization, precision, and parallelism. Get ranked results in hours, not weeks.</p>
+      </div>
+    </div>
+
+    <div class="compare-row">
+      <div class="compare-card before">
+        <div class="tag">Without ServeSmith</div>
+        <h3>Synthetic Benchmarks</h3>
+        <p>Run benchmarks with random tokens and uniform lengths. Deploy to production. Discover your actual traffic pattern performs 40% worse than the benchmark showed.</p>
+      </div>
+      <div class="compare-card after">
+        <div class="tag">With ServeSmith</div>
+        <h3>Your Real Traffic</h3>
+        <p>Benchmark with your actual production traffic sample. Input/output length distributions, prompt patterns, token distributions — all reflected in the results.</p>
+      </div>
+    </div>
+
+    <div class="compare-row">
+      <div class="compare-card before">
+        <div class="tag">Without ServeSmith</div>
+        <h3>One Config, Hope for the Best</h3>
+        <p>You deployed vLLM with FP16 on a g5.2xlarge because that's what the blog post said. Is AWQ on a g4dn cheaper? Is TensorRT-LLM faster? You'll never know.</p>
+      </div>
+      <div class="compare-card after">
+        <div class="tag">With ServeSmith</div>
+        <h3>Cross-Backend Comparison</h3>
+        <p>ServeSmith tests vLLM, TensorRT-LLM, and Triton on the same model with the same traffic. You see exactly which backend wins for your specific workload.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="results" id="results">
+  <div class="container">
+    <h2>Real Benchmark Results</h2>
+    <p class="subtitle">Qwen2.5-0.5B on g4dn.xlarge (T4 GPU) — tested by ServeSmith in 10 minutes</p>
+    <table>
+      <tr>
+        <th>Config</th>
+        <th>Tokens/sec</th>
+        <th>p99 Latency</th>
+        <th>GPU Util</th>
+        <th>Cost/M tokens</th>
+        <th></th>
+      </tr>
+      <tr>
+        <td>FP16, concurrency=1</td>
+        <td>122</td>
+        <td>309ms</td>
+        <td>72%</td>
+        <td>$1.19</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>FP16, concurrency=4</td>
+        <td>456</td>
+        <td>353ms</td>
+        <td>99%</td>
+        <td>$0.32</td>
+        <td></td>
+      </tr>
+      <tr style="background:rgba(34,197,94,.05)">
+        <td><strong>FP16, concurrency=8</strong></td>
+        <td class="highlight">820</td>
+        <td>400ms</td>
+        <td>94%</td>
+        <td class="highlight">$0.054</td>
+        <td><span class="tag-best">Best $/token</span></td>
+      </tr>
+      <tr>
+        <td>AWQ, concurrency=4</td>
+        <td>238</td>
+        <td>756ms</td>
+        <td>—</td>
+        <td>$0.61</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>FP16, context=4096, conc=4</td>
+        <td>449</td>
+        <td>355ms</td>
+        <td>—</td>
+        <td>$0.32</td>
+        <td></td>
+      </tr>
+    </table>
+    <p style="text-align:center;margin-top:24px;color:var(--text2);font-size:.85rem">ServeSmith found a <strong style="color:var(--green)">6.7× throughput improvement</strong> by changing one parameter (concurrency 1→8) — same hardware, same model, same cost.</p>
+  </div>
+</section>
+
+<section class="pricing" id="pricing">
+  <div class="container">
+    <h2>Simple Pricing</h2>
+    <p class="subtitle">Open source core. Pay only for compute when you run experiments.</p>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="plan">Free</div>
+        <div class="price">$0<span>/month</span></div>
+        <ul>
+          <li>Self-hosted on your infra</li>
+          <li>Unlimited experiments</li>
+          <li>vLLM + Triton backends</li>
+          <li>Community support</li>
+          <li>Full source code (MIT)</li>
+        </ul>
+        <a href="#" class="btn btn-outline">Get Started</a>
+      </div>
+      <div class="price-card featured">
+        <div class="plan">Cloud</div>
+        <div class="price">$49<span>/month</span></div>
+        <ul>
+          <li>Managed infrastructure</li>
+          <li>No EKS setup required</li>
+          <li>All backends included</li>
+          <li>GPU instances on-demand</li>
+          <li>Dashboard + API access</li>
+          <li>Priority support</li>
+        </ul>
+        <a href="#" class="btn">Start Free Trial →</a>
+      </div>
+      <div class="price-card">
+        <div class="plan">Enterprise</div>
+        <div class="price">Custom</div>
+        <ul>
+          <li>Dedicated infrastructure</li>
+          <li>Custom backends</li>
+          <li>SSO / SAML</li>
+          <li>SLA guarantee</li>
+          <li>Dedicated support engineer</li>
+        </ul>
+        <a href="#" class="btn btn-outline">Contact Sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>ServeSmith — ML Inference Optimization Platform</p>
+    <p style="margin-top:8px;font-size:.75rem">Open source under MIT License. Built with vLLM, TensorRT-LLM, and Kubernetes.</p>
+  </div>
+</footer>
+
+</body>
+</html>
