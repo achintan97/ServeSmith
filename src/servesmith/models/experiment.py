@@ -57,6 +57,9 @@ class ExperimentRequest(BaseModel):
     min_tokens_per_sec: float | None = None
     max_cost_per_million_tokens: float | None = None
 
+    # Benchmark an existing endpoint instead of launching pods
+    existing_endpoint: str | None = None
+
 
 class ExperimentStatus(str, Enum):
     """Experiment lifecycle states."""
